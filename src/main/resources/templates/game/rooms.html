@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe - Game Rooms</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/rooms.css">
+    <link rel="stylesheet" href="/css/background.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">Tic-Tac-Toe</div>
+            <div class="user-info">
+                <div id="auth-section">
+                    <!-- This will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="glass-container rooms-container">
+            <h1>Game Rooms</h1>
+            <button id="create-room-btn" class="btn">Create New Room</button>
+            
+            <div class="join-form">
+                <h3>Join Room by ID</h3>
+                <div class="join-form-content">
+                    <input type="text" id="room-id-input" placeholder="Enter Room ID">
+                    <button id="join-by-id-btn" class="btn">Join</button>
+                </div>
+            </div>
+            
+            <div id="room-list" class="room-list">
+                <!-- Room list will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+    
+    <script src="/js/background-animation.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is logged in
+            const username = sessionStorage.getItem('username');
+            const authSection = document.getElementById('auth-section');
+            
+            if (username) {
+                authSection.innerHTML = `
+                    <span>Welcome, ${username}!</span>
+                    <a class="logout-btn" onclick="logout()">Logout</a>
+                `;
+                loadRooms();
+            } else {
+                authSection.innerHTML = `
+                    <div class="auth-buttons">
+                        <a href="/auth/login" class="login-btn">Login</a>
+                        <a href="/auth/register" class="register-btn">Register</a>
+                    </div>
+                `;
+                document.getElementById('room-list').innerHTML = `
+                    <div class="no-rooms">
+                        <p>Please login to view and join game rooms.</p>
+                    </div>
+                `;
+                document.getElementById('create-room-btn').disabled = true;
+                document.getElementById('create-room-btn').classList.add('disabled');
+            }
+            
+            // Set up event listeners
+            document.getElementById('create-room-btn').addEventListener('click', createRoom);
+            document.getElementById('join-by-id-btn').addEventListener('click', function() {
+                const roomId = document.getElementById('room-id-input').value.trim();
+                if (roomId) {
+                    joinRoom(roomId);
+                } else {
+                    alert('Please enter a valid Room ID');
+                }
+            });
+            
+            // Allow pressing Enter in the room ID input
+            document.getElementById('room-id-input').addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    const roomId = this.value.trim();
+                    if (roomId) {
+                        joinRoom(roomId);
+                    } else {
+                        alert('Please enter a valid Room ID');
+                    }
+                }
+            });
+        });
+        
+        function loadRooms() {
+            fetch('/api/rooms')
+                .then(response => response.json())
+                .then(rooms => {
+                    const roomList = document.getElementById('room-list');
+                    
+                    if (rooms.length === 0) {
+                        roomList.innerHTML = `
+                            <div class="no-rooms">
+                                <p>No game rooms available. Create one!</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    roomList.innerHTML = '';
+                    rooms.forEach(room => {
+                        const isFull = room.playerX && room.playerO;
+                        const statusClass = isFull ? 'full' : 'available';
+                        const statusText = isFull ? 'Full' : 'Available';
+                        
+                        roomList.innerHTML += `
+                            <div class="room-item">
+                                <div class="room-info">
+                                    <div>Room ID: ${room.id}</div>
+                                    <div>Players: ${room.playerX || 'Waiting...'} vs ${room.playerO || 'Waiting...'}</div>
+                                </div>
+                                <div class="room-actions">
+                                    <div class="room-status ${statusClass}">${statusText}</div>
+                                    <button onclick="joinRoom('${room.id}')" class="join-btn ${isFull ? 'disabled' : ''}" ${isFull ? 'disabled' : ''}>
+                                        Join Room
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading rooms:', error);
+                    document.getElementById('room-list').innerHTML = `
+                        <div class="no-rooms">
+                            <p>Error loading game rooms. Please try again later.</p>
+                        </div>
+                    `;
+                });
+        }
+        
+        function createRoom() {
+            const username = sessionStorage.getItem('username');
+            if (!username) {
+                alert('Please login to create a room.');
+                return;
+            }
+            
+            fetch('/api/rooms', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(room => {
+                joinRoom(room.id);
+            })
+            .catch(error => {
+                console.error('Error creating room:', error);
+                alert('Failed to create room. Please try again.');
+            });
+        }
+        
+        function joinRoom(roomId) {
+            const username = sessionStorage.getItem('username');
+            if (!username) {
+                alert('Please login to join a room.');
+                return;
+            }
+            
+            fetch(`/api/rooms/${roomId}/join?username=${encodeURIComponent(username)}`, {
+                method: 'POST'
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = `/game/room/${roomId}`;
+                } else if (response.status === 404) {
+                    alert('Room not found. Please check the Room ID and try again.');
+                    loadRooms(); // Refresh the room list
+                } else if (response.status === 409) {
+                    alert('Failed to join room. It might be full or no longer available.');
+                    loadRooms(); // Refresh the room list
+                } else {
+                    alert('An error occurred while joining the room.');
+                    loadRooms(); // Refresh the room list
+                }
+            })
+            .catch(error => {
+                console.error('Error joining room:', error);
+                alert('Failed to join room. Please try again.');
+            });
+        }
+        
+        function logout() {
+            sessionStorage.removeItem('username');
+            window.location.href = '/auth/login';
+        }
+        
+        // Refresh room list every 5 seconds
+        setInterval(function() {
+            if (sessionStorage.getItem('username')) {
+                loadRooms();
+            }
+        }, 5000);
+    </script>
+</body>
+</html> 

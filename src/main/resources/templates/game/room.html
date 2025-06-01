@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe - Game Room</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/game.css">
+    <link rel="stylesheet" href="/css/background.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">Tic-Tac-Toe</div>
+            <div class="user-info">
+                <div id="auth-section">
+                    <!-- This will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="glass-container">
+            <h1>Game Room</h1>
+            
+            <div class="room-code">
+                Room Code: <span class="room-code-value" th:text="${room.id}"></span>
+            </div>
+            
+            <div class="game-info">
+                <div id="game-status" class="game-status">Waiting for players...</div>
+                
+                <div class="player-info">
+                    <div id="player-x" class="player x">
+                        <div class="player-label">Player X</div>
+                        <div id="player-x-name" class="player-name waiting">Waiting...</div>
+                    </div>
+                    
+                    <div id="player-o" class="player o">
+                        <div class="player-label">Player O</div>
+                        <div id="player-o-name" class="player-name waiting">Waiting...</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="game-board" class="game-board">
+                <!-- Game board will be created by JavaScript -->
+            </div>
+            
+            <div id="game-result" class="game-result hidden"></div>
+            
+            <div class="actions">
+                <a href="/" class="btn" style="background: linear-gradient(45deg, #2196F3, #0D47A1);">Go to Menu</a>
+                <a href="/game/rooms" class="btn leave">Leave Room</a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script src="/js/background-animation.js"></script>
+    
+    <script th:inline="javascript">
+        // Get room ID from Thymeleaf
+        const roomId = /*[[${room.id}]]*/ 'temp-id';
+        let stompClient = null;
+        let currentRoom = null;
+        let currentUsername = null;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is logged in
+            currentUsername = sessionStorage.getItem('username');
+            const authSection = document.getElementById('auth-section');
+            
+            if (currentUsername) {
+                authSection.innerHTML = `
+                    <span>Welcome, ${currentUsername}!</span>
+                    <a class="logout-btn" onclick="logout()">Logout</a>
+                `;
+                
+                // Initialize the game
+                initializeGame();
+            } else {
+                authSection.innerHTML = `
+                    <div class="auth-buttons">
+                        <a href="/auth/login" class="login-btn">Login</a>
+                        <a href="/auth/register" class="register-btn">Register</a>
+                    </div>
+                `;
+                document.getElementById('game-status').textContent = 'Please login to play.';
+            }
+        });
+        
+        function initializeGame() {
+            // Initialize WebSocket connection
+            const socket = new SockJS('/ws');
+            stompClient = Stomp.over(socket);
+            
+            stompClient.connect({}, function(frame) {
+                console.log('Connected: ' + frame);
+                
+                // Subscribe to room updates
+                stompClient.subscribe('/topic/room/' + roomId, function(message) {
+                    const roomData = JSON.parse(message.body);
+                    updateGameState(roomData);
+                });
+                
+                // Join the room
+                joinRoom();
+                
+                // Initialize the game board
+                initializeBoard();
+            });
+        }
+        
+        function joinRoom() {
+            fetch(`/api/rooms/${roomId}/join?username=${encodeURIComponent(currentUsername)}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(roomData => {
+                updateGameState(roomData);
+            })
+            .catch(error => {
+                console.error('Error joining room:', error);
+                alert('Failed to join room. Please try again.');
+            });
+        }
+        
+        function initializeBoard() {
+            const gameBoard = document.getElementById('game-board');
+            gameBoard.innerHTML = '';
+            
+            for (let row = 0; row < 3; row++) {
+                for (let col = 0; col < 3; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.addEventListener('click', () => makeMove(row, col));
+                    gameBoard.appendChild(cell);
+                }
+            }
+        }
+        
+        function updateGameState(roomData) {
+            currentRoom = roomData;
+            
+            // Update player information
+            const playerXElement = document.getElementById('player-x');
+            const playerOElement = document.getElementById('player-o');
+            const playerXNameElement = document.getElementById('player-x-name');
+            const playerONameElement = document.getElementById('player-o-name');
+            
+            // Reset classes
+            playerXElement.className = 'player x';
+            playerOElement.className = 'player o';
+            
+            // Update player X
+            if (roomData.playerX) {
+                playerXNameElement.textContent = roomData.playerX;
+                playerXNameElement.className = 'player-name';
+                
+                if (roomData.currentTurn === roomData.playerX) {
+                    playerXElement.classList.add('current');
+                }
+            } else {
+                playerXNameElement.textContent = 'Waiting...';
+                playerXNameElement.className = 'player-name waiting';
+            }
+            
+            // Update player O
+            if (roomData.playerO) {
+                playerONameElement.textContent = roomData.playerO;
+                playerONameElement.className = 'player-name';
+                
+                if (roomData.currentTurn === roomData.playerO) {
+                    playerOElement.classList.add('current');
+                }
+            } else {
+                playerONameElement.textContent = 'Waiting...';
+                playerONameElement.className = 'player-name waiting';
+            }
+            
+            // Update game status
+            const gameStatusElement = document.getElementById('game-status');
+            if (!roomData.gameStarted) {
+                gameStatusElement.textContent = 'Waiting for players...';
+            } else if (roomData.gameFinished) {
+                if (roomData.winner === 'Draw') {
+                    gameStatusElement.textContent = 'Game Over - Draw!';
+                } else {
+                    gameStatusElement.textContent = `Game Over - ${roomData.winner} wins!`;
+                }
+            } else {
+                gameStatusElement.textContent = `Current Turn: ${roomData.currentTurn}`;
+            }
+            
+            // Update game board
+            updateBoard(roomData.board);
+            
+            // Show game result if finished
+            const gameResultElement = document.getElementById('game-result');
+            if (roomData.gameFinished) {
+                gameResultElement.classList.remove('hidden');
+                
+                if (roomData.winner === 'Draw') {
+                    gameResultElement.textContent = 'Game ended in a draw!';
+                    gameResultElement.className = 'game-result draw';
+                } else if (roomData.winner === currentUsername) {
+                    gameResultElement.textContent = 'You won!';
+                    gameResultElement.className = 'game-result win';
+                } else {
+                    gameResultElement.textContent = `${roomData.winner} won!`;
+                    gameResultElement.className = 'game-result lose';
+                }
+            } else {
+                gameResultElement.classList.add('hidden');
+            }
+        }
+        
+        function updateBoard(board) {
+            const cells = document.querySelectorAll('.cell');
+            
+            cells.forEach(cell => {
+                const row = parseInt(cell.dataset.row);
+                const col = parseInt(cell.dataset.col);
+                
+                // Reset cell
+                cell.textContent = '';
+                cell.className = 'cell';
+                
+                // Update cell content
+                if (board[row][col] === 'X') {
+                    cell.textContent = 'X';
+                    cell.classList.add('x');
+                } else if (board[row][col] === 'O') {
+                    cell.textContent = 'O';
+                    cell.classList.add('o');
+                }
+                
+                // Disable cell if game is over or cell is already filled
+                if (currentRoom.gameFinished || board[row][col] !== '') {
+                    cell.classList.add('disabled');
+                }
+                
+                // Disable cell if it's not the current user's turn
+                if (currentRoom && currentRoom.currentTurn !== currentUsername) {
+                    cell.classList.add('disabled');
+                }
+            });
+        }
+        
+        function makeMove(row, col) {
+            // Check if it's valid to make a move
+            if (!currentRoom || currentRoom.gameFinished || currentRoom.currentTurn !== currentUsername) {
+                return;
+            }
+            
+            // Check if the cell is empty
+            if (currentRoom.board[row][col] !== '') {
+                return;
+            }
+            
+            // Send the move to the server
+            stompClient.send("/app/move", {}, JSON.stringify({
+                roomId: roomId,
+                username: currentUsername,
+                row: row,
+                col: col
+            }));
+        }
+        
+        function logout() {
+            // Leave the room before logging out
+            if (roomId && currentUsername) {
+                fetch(`/api/rooms/${roomId}/leave?username=${encodeURIComponent(currentUsername)}`, {
+                    method: 'POST'
+                }).catch(error => {
+                    console.error('Error leaving room:', error);
+                });
+            }
+            
+            // Disconnect WebSocket
+            if (stompClient !== null) {
+                stompClient.disconnect();
+            }
+            
+            // Clear session and redirect
+            sessionStorage.removeItem('username');
+            window.location.href = '/auth/login';
+        }
+        
+        // Handle page unload to leave the room
+        window.addEventListener('beforeunload', function() {
+            if (roomId && currentUsername) {
+                navigator.sendBeacon(`/api/rooms/${roomId}/leave?username=${encodeURIComponent(currentUsername)}`);
+            }
+        });
+    </script>
+</body>
+</html> 

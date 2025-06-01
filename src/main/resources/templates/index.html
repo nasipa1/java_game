@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/home.css">
+    <link rel="stylesheet" href="/css/background.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">Tic-Tac-Toe</div>
+            <div class="user-info">
+                <div id="auth-section">
+                    <!-- This will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="glass-container">
+            <div class="welcome-container">
+                <h1>Welcome to Tic-Tac-Toe!</h1>
+                <p>Play the classic game of Tic-Tac-Toe against another player.</p>
+            </div>
+            
+            <div id="login-message" style="display: none;"></div>
+            
+            <div class="game-board-preview" id="game-board">
+                <!-- Game board will be created by JavaScript -->
+            </div>
+            
+            <div class="game-info" id="game-info">
+                <!-- Game info will be updated by JavaScript -->
+            </div>
+            
+            <div class="game-actions">
+                <button class="btn start-game-btn" id="start-game">Start New Game</button>
+                <a href="/game/rooms" class="btn join-game-btn">Join Game Room</a>
+            </div>
+        </div>
+        
+        <div class="glass-container top-players">
+            <h2>Top Players</h2>
+            <div id="top-winners-container" class="top-winners-container">
+                <table class="top-winners-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Player</th>
+                            <th>Wins</th>
+                        </tr>
+                    </thead>
+                    <tbody id="top-winners-body">
+                        <tr>
+                            <td colspan="3" style="text-align: center; padding: 20px; color: #aaa;">Loading top players...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <a href="/stats" class="btn view-stats-btn">View All Statistics</a>
+        </div>
+    </div>
+    
+    <script src="/js/background-animation.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is logged in
+            const username = sessionStorage.getItem('username');
+            const authSection = document.getElementById('auth-section');
+            const loginMessage = document.getElementById('login-message');
+            
+            if (username) {
+                authSection.innerHTML = `
+                    <span>Welcome, ${username}!</span>
+                    <a class="logout-btn" onclick="logout()">Logout</a>
+                `;
+                loginMessage.style.display = 'none';
+            } else {
+                authSection.innerHTML = `
+                    <div class="auth-buttons">
+                        <a href="/auth/login" class="login-btn">Login</a>
+                        <a href="/auth/register" class="register-btn">Register</a>
+                    </div>
+                `;
+                loginMessage.textContent = 'Please login to save your game history.';
+                loginMessage.style.display = 'block';
+            }
+            
+            // Initialize game board preview
+            const gameBoard = document.getElementById('game-board');
+            gameBoard.innerHTML = '';
+            
+            // Create a sample board with some X and O marks
+            const sampleBoard = [
+                ['X', '', 'O'],
+                ['', 'X', ''],
+                ['O', '', 'X']
+            ];
+            
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'preview-cell';
+                
+                const row = Math.floor(i / 3);
+                const col = i % 3;
+                
+                if (sampleBoard[row][col] === 'X') {
+                    cell.textContent = 'X';
+                    cell.classList.add('x');
+                } else if (sampleBoard[row][col] === 'O') {
+                    cell.textContent = 'O';
+                    cell.classList.add('o');
+                }
+                
+                gameBoard.appendChild(cell);
+            }
+            
+            document.getElementById('game-info').textContent = 'Click Start New Game to begin!';
+            
+            // Add event listener for start game button
+            document.getElementById('start-game').addEventListener('click', function() {
+                if (username) {
+                    window.location.href = '/game/rooms';
+                } else {
+                    alert('Please login to start a new game.');
+                    window.location.href = '/auth/login';
+                }
+            });
+            
+            // Load top winners
+            loadTopWinners();
+        });
+        
+        function loadTopWinners() {
+            fetch('/stats/api/top-winners')
+                .then(response => response.json())
+                .then(winners => {
+                    const tableBody = document.getElementById('top-winners-body');
+                    
+                    if (winners.length === 0) {
+                        tableBody.innerHTML = `
+                            <tr>
+                                <td colspan="3" style="text-align: center; padding: 20px; color: #aaa;">
+                                    No game data available yet. Start playing to see statistics!
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+                    
+                    tableBody.innerHTML = '';
+                    winners.slice(0, 5).forEach((winner, index) => {
+                        const rankClass = index < 3 ? `rank-${index + 1}` : '';
+                        
+                        tableBody.innerHTML += `
+                            <tr>
+                                <td class="rank ${rankClass}">${index + 1}</td>
+                                <td class="username">${winner.username}</td>
+                                <td class="wins">${winner.wins}</td>
+                            </tr>
+                        `;
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading top winners:', error);
+                    document.getElementById('top-winners-body').innerHTML = `
+                        <tr>
+                            <td colspan="3" style="text-align: center; padding: 20px; color: #aaa;">
+                                Error loading top players. Please try again later.
+                            </td>
+                        </tr>
+                    `;
+                });
+        }
+        
+        function logout() {
+            // Clear session storage
+            sessionStorage.removeItem('username');
+            
+            // Redirect to login page
+            window.location.href = '/auth/login';
+        }
+    </script>
+</body>
+</html>

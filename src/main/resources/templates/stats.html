@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe - Statistics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/background.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background-color: #333;
+            color: white;
+            padding: 10px 0;
+        }
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+        .user-info span {
+            margin-right: 15px;
+        }
+        .auth-buttons a {
+            color: white;
+            text-decoration: none;
+            margin-left: 10px;
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
+        .login-btn {
+            background-color: #4CAF50;
+        }
+        .register-btn {
+            background-color: #2196F3;
+        }
+        .logout-btn {
+            background-color: #f44336;
+            cursor: pointer;
+        }
+        .glass-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            margin-top: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+        .stats-section {
+            margin-bottom: 30px;
+        }
+        .stats-section h2 {
+            color: #fff;
+            position: relative;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        .stats-section h2::after {
+            content: '';
+            position: absolute;
+            width: 60%;
+            height: 3px;
+            background: linear-gradient(90deg, #4CAF50, transparent);
+            bottom: -8px;
+            left: 0;
+            border-radius: 3px;
+        }
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            overflow: hidden;
+            border-radius: 10px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        .stats-table thead {
+            background: rgba(0, 0, 0, 0.3);
+        }
+        .stats-table th {
+            padding: 15px;
+            text-align: left;
+            color: #fff;
+            font-weight: bold;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        .stats-table th:first-child {
+            text-align: center;
+            width: 80px;
+        }
+        .stats-table th:last-child {
+            text-align: center;
+        }
+        .stats-table td {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            color: #fff;
+        }
+        .stats-table tbody tr {
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.5s ease;
+        }
+        .stats-table tbody tr:hover {
+            background: rgba(15, 23, 42, 0.6);
+            transform: translateX(5px);
+        }
+        .rank {
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .rank-1 {
+            color: #FFD700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+        }
+        .rank-2 {
+            color: #C0C0C0;
+            text-shadow: 0 0 10px rgba(192, 192, 192, 0.7);
+        }
+        .rank-3 {
+            color: #CD7F32;
+            text-shadow: 0 0 10px rgba(205, 127, 50, 0.7);
+        }
+        .username {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .wins {
+            text-align: center;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        .no-data {
+            text-align: center;
+            padding: 30px;
+            color: #aaa;
+            font-style: italic;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 20px;
+            animation: fadeIn 0.5s ease;
+        }
+        .navigation {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        .navigation a:first-child {
+            background: linear-gradient(45deg, #4CAF50, #2E7D32);
+        }
+        .navigation a:last-child {
+            background: linear-gradient(45deg, #2196F3, #0D47A1);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">Tic-Tac-Toe</div>
+            <div class="user-info">
+                <div id="auth-section">
+                    <!-- This will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="glass-container">
+            <h1>Game Statistics</h1>
+            
+            <div class="stats-section">
+                <h2>Top Winners</h2>
+                <table class="stats-table" th:if="${not #lists.isEmpty(topWinners)}">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Player</th>
+                            <th>Wins</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="winner, stat : ${topWinners}">
+                            <td class="rank" th:classappend="${stat.index < 3 ? 'rank-' + (stat.index + 1) : ''}" th:text="${stat.index + 1}">1</td>
+                            <td class="username" th:text="${winner.username}">Username</td>
+                            <td class="wins" th:text="${winner.wins}">10</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="no-data" th:if="${#lists.isEmpty(topWinners)}">
+                    <p>No game data available yet. Start playing to see statistics!</p>
+                </div>
+            </div>
+            
+            <div class="navigation">
+                <a href="/" class="btn">Home</a>
+                <a href="/game/rooms" class="btn">Game Rooms</a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/js/background-animation.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is logged in
+            const username = sessionStorage.getItem('username');
+            const authSection = document.getElementById('auth-section');
+            
+            if (username) {
+                authSection.innerHTML = `
+                    <span>Welcome, ${username}!</span>
+                    <a class="logout-btn" onclick="logout()">Logout</a>
+                `;
+            } else {
+                authSection.innerHTML = `
+                    <div class="auth-buttons">
+                        <a href="/auth/login" class="login-btn">Login</a>
+                        <a href="/auth/register" class="register-btn">Register</a>
+                    </div>
+                `;
+            }
+        });
+        
+        function logout() {
+            sessionStorage.removeItem('username');
+            window.location.href = '/auth/login';
+        }
+    </script>
+</body>
+</html> 

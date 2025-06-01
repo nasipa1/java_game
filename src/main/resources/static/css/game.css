@@ -1,0 +1,235 @@
+/* Game-specific styles for Tic-Tac-Toe */
+
+/* Game board styling */
+.game-board {
+    display: grid;
+    grid-template-columns: repeat(3, 100px);
+    grid-gap: 10px;
+    margin: 30px auto;
+    width: 320px;
+    perspective: 1000px;
+}
+
+.cell {
+    width: 100px;
+    height: 100px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 48px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    transform-style: preserve-3d;
+    animation: fadeIn 0.5s ease;
+}
+
+.cell:hover:not(.disabled) {
+    transform: translateY(-5px) rotateX(10deg);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.cell.x {
+    color: #2196F3;
+    text-shadow: 0 0 10px rgba(33, 150, 243, 0.7);
+    animation: markX 0.5s ease forwards;
+}
+
+.cell.o {
+    color: #f44336;
+    text-shadow: 0 0 10px rgba(244, 67, 54, 0.7);
+    animation: markO 0.5s ease forwards;
+}
+
+.cell.disabled {
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+/* Game info styling */
+.game-info {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(5px);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    animation: fadeIn 0.5s ease;
+}
+
+.game-status {
+    font-weight: bold;
+    margin-bottom: 15px;
+    font-size: 18px;
+    text-align: center;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    animation: pulse 1.5s infinite;
+}
+
+.player-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.player {
+    flex: 1;
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.player.x {
+    background: rgba(33, 150, 243, 0.2);
+    margin-right: 10px;
+    border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.player.o {
+    background: rgba(244, 67, 54, 0.2);
+    margin-left: 10px;
+    border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.player.current {
+    animation: currentPlayer 2s infinite;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+}
+
+.player-label {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 5px;
+}
+
+.player-name {
+    margin-top: 5px;
+    font-size: 18px;
+}
+
+.waiting {
+    color: #aaa;
+    font-style: italic;
+}
+
+/* Game result styling */
+.game-result {
+    margin-top: 25px;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    animation: bounceIn 0.8s ease;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.game-result.win {
+    background: linear-gradient(135deg, rgba(60, 179, 113, 0.8), rgba(46, 125, 50, 0.8));
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.game-result.lose {
+    background: linear-gradient(135deg, rgba(244, 67, 54, 0.8), rgba(183, 28, 28, 0.8));
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.game-result.draw {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.8), rgba(255, 111, 0, 0.8));
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.room-code {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(5px);
+    border-radius: 10px;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    animation: fadeIn 0.5s ease;
+}
+
+.room-code-value {
+    font-weight: bold;
+    font-family: monospace;
+    font-size: 18px;
+    color: #4CAF50;
+    letter-spacing: 2px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 8px 15px;
+    border-radius: 5px;
+    display: inline-block;
+    margin-top: 5px;
+}
+
+.actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 25px;
+}
+
+/* Specific animations */
+@keyframes markX {
+    0% {
+        transform: scale(0.5) rotate(-45deg);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+}
+
+@keyframes markO {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    70% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes currentPlayer {
+    0% {
+        box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+    }
+    100% {
+        box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    }
+}
+
+@keyframes bounceIn {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    60% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+} 

@@ -173,6 +173,9 @@
                     return;
                 }
                 
+                // Store username in sessionStorage
+                sessionStorage.setItem('username', username);
+                
                 // Submit the form
                 this.submit();
             });

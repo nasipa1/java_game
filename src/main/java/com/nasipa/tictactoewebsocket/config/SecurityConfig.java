@@ -27,12 +27,11 @@ public class SecurityConfig {
                 .anyRequest().permitAll() // Temporarily allow all requests for testing
             )
             .headers(headers -> headers.frameOptions().disable()) // For H2 Console
-            .formLogin(form -> form
-                .loginPage("/auth/login")
-                .permitAll()
-            )
+            // Disable Spring Security's form login since we're using our own authentication
+            .formLogin(form -> form.disable())
             .logout(logout -> logout
                 .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
+                .logoutSuccessUrl("/")
                 .permitAll()
             );
             

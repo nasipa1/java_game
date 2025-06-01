@@ -118,6 +118,16 @@
             text-decoration: underline;
             color: #0D47A1;
         }
+        
+        .success-message {
+            background: rgba(76, 175, 80, 0.1);
+            border-left: 4px solid #4CAF50;
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            color: #4CAF50;
+            border-radius: 4px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -127,6 +137,10 @@
             
             <div th:if="${param.error}" class="error-message">
                 Invalid username or password.
+            </div>
+            
+            <div th:if="${param.registered}" class="success-message">
+                Registration successful! Please login with your new account.
             </div>
             
             <form th:action="@{/auth/login}" method="post">
@@ -162,8 +176,7 @@
                 const username = document.getElementById('username').value;
                 const password = document.getElementById('password').value;
                 
-                // You would normally validate the login with the server here
-                // For now, we'll just store the username in sessionStorage
+                // Store username in sessionStorage for client-side access
                 sessionStorage.setItem('username', username);
                 
                 // Submit the form

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe - Coin Toss Room</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/game.css">
+    <link rel="stylesheet" href="/css/coin-toss.css">
+    <link rel="stylesheet" href="/css/background.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">Tic-Tac-Toe</div>
+            <div class="user-info">
+                <div id="auth-section">
+                    <!-- This will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="glass-container coin-toss-container">
+            <h1>Coin Toss Room</h1>
+            
+            <div class="room-code">
+                Room Code: <span class="room-code-value" th:text="${coinToss.id}"></span>
+            </div>
+            
+            <div id="coin-container" class="coin-container">
+                <div id="coin" class="coin">
+                    <div class="coin-face coin-heads">HEADS</div>
+                    <div class="coin-face coin-tails">TAILS</div>
+                </div>
+            </div>
+            
+            <div id="coin-result" class="coin-result"></div>
+            
+            <div id="guess-section" class="guess-section">
+                <h3>Make Your Guess</h3>
+                <p>Choose Heads or Tails - everyone can participate!</p>
+                <div class="guess-buttons">
+                    <button id="heads-btn" class="guess-btn heads-btn">HEADS</button>
+                    <button id="tails-btn" class="guess-btn tails-btn">TAILS</button>
+                </div>
+            </div>
+            
+            <div id="participants-section" class="participants-section">
+                <h3>Participants</h3>
+                <div id="participants-list" class="participants-list">
+                    <!-- Will be populated by JavaScript -->
+                    <div class="no-participants">Waiting for participants...</div>
+                </div>
+            </div>
+            
+            <div id="winner-section" class="winner-section hidden">
+                <h3>Winners</h3>
+                <div id="winner-name" class="winner-name"></div>
+            </div>
+            
+            <div class="actions">
+                <button id="toss-btn" class="toss-btn">Toss Coin</button>
+                <a href="/game/coin-toss/rooms" class="btn">Back to Rooms</a>
+                <a href="/" class="btn" style="background: linear-gradient(45deg, #2196F3, #0D47A1);">Go to Menu</a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script src="/js/background-animation.js"></script>
+    
+    <script th:inline="javascript">
+        // Get coin toss ID from Thymeleaf
+        const coinTossId = /*[[${coinToss.id}]]*/ 'temp-id';
+        let stompClient = null;
+        let currentCoinToss = null;
+        let currentUsername = null;
+        let userGuess = null;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is logged in
+            currentUsername = sessionStorage.getItem('username');
+            const authSection = document.getElementById('auth-section');
+            
+            if (currentUsername) {
+                authSection.innerHTML = `
+                    <span>Welcome, ${currentUsername}!</span>
+                    <a class="logout-btn" onclick="logout()">Logout</a>
+                `;
+                
+                // Initialize the coin toss
+                initializeCoinToss();
+            } else {
+                authSection.innerHTML = `
+                    <div class="auth-buttons">
+                        <a href="/auth/login" class="login-btn">Login</a>
+                        <a href="/auth/register" class="register-btn">Register</a>
+                    </div>
+                `;
+                document.getElementById('guess-section').innerHTML = '<p>Please login to participate.</p>';
+                document.getElementById('toss-btn').disabled = true;
+            }
+        });
+        
+        function initializeCoinToss() {
+            // Initialize WebSocket connection
+            const socket = new SockJS('/ws');
+            stompClient = Stomp.over(socket);
+            
+            stompClient.connect({}, function(frame) {
+                console.log('Connected: ' + frame);
+                
+                // Subscribe to coin toss updates
+                stompClient.subscribe('/topic/coin-toss/' + coinTossId, function(message) {
+                    const coinTossData = JSON.parse(message.body);
+                    updateCoinTossState(coinTossData);
+                });
+                
+                // Load initial coin toss data
+                loadCoinTossData();
+                
+                // Set up event listeners
+                document.getElementById('heads-btn').addEventListener('click', () => makeGuess('HEADS'));
+                document.getElementById('tails-btn').addEventListener('click', () => makeGuess('TAILS'));
+                document.getElementById('toss-btn').addEventListener('click', tossCoin);
+            });
+        }
+        
+        function loadCoinTossData() {
+            fetch(`/api/coin-toss/${coinTossId}`)
+                .then(response => response.json())
+                .then(coinTossData => {
+                    updateCoinTossState(coinTossData);
+                })
+                .catch(error => {
+                    console.error('Error loading coin toss data:', error);
+                    alert('Failed to load coin toss data. Please try again.');
+                });
+        }
+        
+        function updateCoinTossState(coinTossData) {
+            currentCoinToss = coinTossData;
+            
+            // Update participants list
+            updateParticipantsList(coinTossData);
+            
+            // Check if the current user has already made a guess
+            if (coinTossData.userGuesses && coinTossData.userGuesses[currentUsername]) {
+                userGuess = coinTossData.userGuesses[currentUsername];
+                disableGuessButtons();
+                highlightUserGuess();
+            }
+            
+            // Update coin toss status
+            if (coinTossData.completed) {
+                // Show the result
+                document.getElementById('coin-result').textContent = `Result: ${coinTossData.result}`;
+                document.getElementById('coin-result').classList.add('visible');
+                
+                // Animate the coin
+                animateCoin(coinTossData.result);
+                
+                // Disable the toss button
+                document.getElementById('toss-btn').disabled = true;
+                
+                // Show winners
+                if (coinTossData.winners && coinTossData.winners.length > 0) {
+                    document.getElementById('winner-section').classList.remove('hidden');
+                    
+                    // Check if current user is among winners
+                    const isCurrentUserWinner = coinTossData.winners.includes(currentUsername);
+                    const winnerElement = document.getElementById('winner-name');
+                    
+                    if (coinTossData.winners.length === 1) {
+                        winnerElement.textContent = coinTossData.winners[0];
+                        
+                        if (isCurrentUserWinner) {
+                            winnerElement.classList.add('current-user');
+                            winnerElement.textContent = "You won!";
+                        }
+                    } else {
+                        // Multiple winners
+                        let winnersText = coinTossData.winners.join(", ");
+                        
+                        if (isCurrentUserWinner) {
+                            winnerElement.classList.add('current-user');
+                            winnersText = "You and " + 
+                                coinTossData.winners.filter(w => w !== currentUsername).join(", ");
+                        }
+                        
+                        winnerElement.textContent = winnersText;
+                    }
+                } else {
+                    document.getElementById('winner-section').classList.remove('hidden');
+                    document.getElementById('winner-name').textContent = "No winners - no correct guesses";
+                }
+                
+                // Disable guess buttons
+                disableGuessButtons();
+            } else {
+                // Check if the user is the initiator
+                if (coinTossData.initiator !== currentUsername) {
+                    document.getElementById('toss-btn').disabled = true;
+                    document.getElementById('toss-btn').title = "Only the room creator can toss the coin";
+                }
+            }
+        }
+        
+        function updateParticipantsList(coinTossData) {
+            const participantsList = document.getElementById('participants-list');
+            
+            if (!coinTossData.userGuesses || Object.keys(coinTossData.userGuesses).length === 0) {
+                participantsList.innerHTML = '<div class="no-participants">Waiting for participants...</div>';
+                return;
+            }
+            
+            participantsList.innerHTML = '';
+            for (const [username, guess] of Object.entries(coinTossData.userGuesses)) {
+                const isCurrentUser = username === currentUsername;
+                participantsList.innerHTML += `
+                    <div class="participant ${isCurrentUser ? 'current-user' : ''}">
+                        <span class="participant-name">${username}</span>
+                        <span class="participant-guess ${guess.toLowerCase()}">${guess}</span>
+                    </div>
+                `;
+            }
+        }
+        
+        function makeGuess(guess) {
+            if (!currentUsername || userGuess || (currentCoinToss && currentCoinToss.completed)) {
+                return;
+            }
+            
+            fetch(`/api/coin-toss/${coinTossId}/guess?username=${encodeURIComponent(currentUsername)}&guess=${guess}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(coinTossData => {
+                userGuess = guess;
+                disableGuessButtons();
+                highlightUserGuess();
+            })
+            .catch(error => {
+                console.error('Error making guess:', error);
+                alert('Failed to make guess. Please try again.');
+            });
+        }
+        
+        function disableGuessButtons() {
+            document.getElementById('heads-btn').disabled = true;
+            document.getElementById('tails-btn').disabled = true;
+        }
+        
+        function highlightUserGuess() {
+            if (userGuess === 'HEADS') {
+                document.getElementById('heads-btn').classList.add('selected');
+            } else if (userGuess === 'TAILS') {
+                document.getElementById('tails-btn').classList.add('selected');
+            }
+        }
+        
+        function tossCoin() {
+            if (!currentUsername || (currentCoinToss && currentCoinToss.completed)) {
+                return;
+            }
+            
+            // Check if this user is the initiator
+            if (currentCoinToss && currentCoinToss.initiator !== currentUsername) {
+                alert('Only the room creator can toss the coin.');
+                return;
+            }
+            
+            fetch(`/api/coin-toss/${coinTossId}/toss`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(coinTossData => {
+                // The UI will be updated via WebSocket
+            })
+            .catch(error => {
+                console.error('Error tossing coin:', error);
+                alert('Failed to toss coin. Please try again.');
+            });
+        }
+        
+        function animateCoin(result) {
+            const coin = document.getElementById('coin');
+            
+            // Reset classes
+            coin.className = 'coin';
+            
+            // Force a reflow
+            void coin.offsetWidth;
+            
+            // Add the appropriate flip animation class
+            if (result === 'HEADS') {
+                coin.classList.add('flip-heads');
+            } else {
+                coin.classList.add('flip-tails');
+            }
+        }
+        
+        function logout() {
+            // Disconnect WebSocket
+            if (stompClient !== null) {
+                stompClient.disconnect();
+            }
+            
+            // Clear session and redirect
+            sessionStorage.removeItem('username');
+            window.location.href = '/auth/login';
+        }
+    </script>
+</body>
+</html> 

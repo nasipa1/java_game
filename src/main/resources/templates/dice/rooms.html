@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dice Game Rooms</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/rooms.css">
+    <link rel="stylesheet" href="/css/background.css">
+    <style>
+        .create-room-form {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .create-room-form input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .room-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .room-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .room-info {
+            flex: 1;
+        }
+        .room-name {
+            font-weight: 600;
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        .room-players {
+            font-size: 14px;
+            color: #aaa;
+        }
+        .room-status {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-waiting {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .status-full {
+            background-color: #F44336;
+            color: white;
+        }
+        .status-playing {
+            background-color: #2196F3;
+            color: white;
+        }
+        .no-rooms {
+            text-align: center;
+            padding: 30px;
+            color: #aaa;
+        }
+        .error-message {
+            background-color: rgba(255, 0, 0, 0.1);
+            color: #f44336;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">Dice Game Rooms</div>
+            <div class="user-info">
+                <div id="auth-section">
+                    <!-- This will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="glass-container">
+            <h1>Game Rooms</h1>
+            
+            <div class="create-room-form">
+                <input type="text" id="room-name" placeholder="Enter room name">
+                <button class="btn" id="create-room-btn">Create Room</button>
+            </div>
+            
+            <div id="error-container"></div>
+            
+            <div id="rooms-container">
+                <div class="loading">Loading rooms...</div>
+            </div>
+            
+            <div class="actions">
+                <a href="/dice" class="btn">Back to Dice Game</a>
+                <a href="/" class="btn">Main Menu</a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/js/background-animation.js"></script>
+    <script src="/webjars/sockjs-client/sockjs.min.js"></script>
+    <script src="/webjars/stomp-websocket/stomp.min.js"></script>
+    <script src="/js/websocket-test.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is logged in
+            const username = sessionStorage.getItem('username');
+            const authSection = document.getElementById('auth-section');
+            
+            if (!username) {
+                window.location.href = '/auth/login';
+                return;
+            }
+            
+            authSection.innerHTML = `
+                <span>Welcome, ${username}!</span>
+                <a class="logout-btn" onclick="logout()">Logout</a>
+            `;
+            
+            // Load rooms
+            loadRooms();
+            
+            // Create room button
+            document.getElementById('create-room-btn').addEventListener('click', createRoom);
+        });
+        
+        function showError(message) {
+            const errorContainer = document.getElementById('error-container');
+            errorContainer.innerHTML = `<div class="error-message">${message}</div>`;
+        }
+        
+        function loadRooms() {
+            fetch('/dice/api/rooms')
+                .then(response => response.json())
+                .then(rooms => {
+                    const roomsContainer = document.getElementById('rooms-container');
+                    
+                    if (rooms.length === 0) {
+                        roomsContainer.innerHTML = `
+                            <div class="no-rooms">
+                                No game rooms available. Create one to start playing!
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    roomsContainer.innerHTML = '';
+                    rooms.forEach(room => {
+                        let statusClass = 'status-waiting';
+                        let statusText = 'Waiting for players';
+                        
+                        if (room.gameFinished) {
+                            statusClass = 'status-full';
+                            statusText = 'Game finished';
+                        } else if (room.gameStarted) {
+                            statusClass = 'status-playing';
+                            statusText = 'Game in progress';
+                        } else if (room.player1 && room.player2) {
+                            statusClass = 'status-full';
+                            statusText = 'Room full';
+                        }
+                        
+                        const canJoin = !room.gameFinished && 
+                                        (!room.player2 || 
+                                         room.player1 === username || 
+                                         room.player2 === username);
+                        
+                        roomsContainer.innerHTML += `
+                            <div class="room-item">
+                                <div class="room-info">
+                                    <div class="room-name">${room.name}</div>
+                                    <div class="room-players">
+                                        Created by: ${room.creator} | 
+                                        Players: ${room.player1 || 'Waiting...'} vs ${room.player2 || 'Waiting...'}
+                                    </div>
+                                </div>
+                                <div class="room-actions">
+                                    <span class="room-status ${statusClass}">${statusText}</span>
+                                    ${canJoin ? `<a href="/dice/room/${room.id}" class="btn join-btn">Join Room</a>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading rooms:', error);
+                    document.getElementById('rooms-container').innerHTML = `
+                        <div class="no-rooms">
+                            Error loading game rooms. Please try again later.
+                        </div>
+                    `;
+                });
+        }
+        
+        function createRoom() {
+            const roomName = document.getElementById('room-name').value.trim();
+            
+            if (!roomName) {
+                alert('Please enter a room name');
+                return;
+            }
+            
+            fetch('/dice/api/rooms', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name: roomName })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to create room. Please make sure you are logged in.');
+                }
+                return response.json();
+            })
+            .then(room => {
+                window.location.href = `/dice/room/${room.id}`;
+            })
+            .catch(error => {
+                console.error('Error creating room:', error);
+                showError('Error creating room: ' + error.message);
+            });
+        }
+        
+        function logout() {
+            // Clear session storage
+            sessionStorage.removeItem('username');
+            
+            // Redirect to server-side logout to clear the session
+            window.location.href = '/logout';
+        }
+    </script>
+</body>
+</html> 

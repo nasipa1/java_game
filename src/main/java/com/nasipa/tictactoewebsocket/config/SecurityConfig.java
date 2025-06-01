@@ -24,6 +24,7 @@ public class SecurityConfig {
                 .requestMatchers("/").permitAll()
                 .requestMatchers("/index").permitAll()
                 .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
+                .requestMatchers("/webjars/**").permitAll() // Explicitly allow WebJars resources
                 .anyRequest().permitAll() // Temporarily allow all requests for testing
             )
             .headers(headers -> headers.frameOptions().disable()) // For H2 Console

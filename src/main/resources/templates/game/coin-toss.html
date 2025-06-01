@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe - Coin Toss</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/coin-toss.css">
+    <link rel="stylesheet" href="/css/background.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">Tic-Tac-Toe</div>
+            <div class="user-info">
+                <div id="auth-section">
+                    <!-- This will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="glass-container coin-toss-container">
+            <h1>Coin Toss</h1>
+            <p>Flip a coin to decide who goes first in your next game!</p>
+            
+            <div id="coin-container" class="coin-container">
+                <div id="coin" class="coin">
+                    <div class="coin-face coin-heads">HEADS</div>
+                    <div class="coin-face coin-tails">TAILS</div>
+                </div>
+            </div>
+            
+            <div id="coin-result" class="coin-result"></div>
+            
+            <div class="coin-controls">
+                <button id="toss-btn" class="toss-btn">Toss Coin</button>
+                <a href="/" class="btn" style="background: linear-gradient(45deg, #2196F3, #0D47A1);">Back to Menu</a>
+            </div>
+            
+            <div class="coin-history">
+                <h3 class="history-title">Toss History</h3>
+                <ul id="history-list" class="history-list">
+                    <li class="history-item">No tosses yet</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script src="/js/background-animation.js"></script>
+    <script src="/js/coin-toss.js"></script>
+</body>
+</html> 

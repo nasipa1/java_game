@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dice Roll Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/home.css">
+    <link rel="stylesheet" href="/css/background.css">
+    <style>
+        .dice-container {
+            display: flex;
+            justify-content: center;
+            margin: 30px 0;
+            perspective: 600px;
+        }
+        .dice {
+            width: 100px;
+            height: 100px;
+            background-color: white;
+            border-radius: 10px;
+            margin: 0 20px;
+            position: relative;
+            transform-style: preserve-3d;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s;
+        }
+        .dice:hover {
+            transform: rotateY(180deg) rotateZ(20deg);
+        }
+        .dice-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .dot {
+            background-color: #333;
+            border-radius: 50%;
+            margin: 5px;
+        }
+        /* Dot positions for each face */
+        .dice-face.face-1 .dot:nth-child(1) { grid-area: 2 / 2; }
+        
+        .dice-face.face-2 .dot:nth-child(1) { grid-area: 1 / 1; }
+        .dice-face.face-2 .dot:nth-child(2) { grid-area: 3 / 3; }
+        
+        .dice-face.face-3 .dot:nth-child(1) { grid-area: 1 / 1; }
+        .dice-face.face-3 .dot:nth-child(2) { grid-area: 2 / 2; }
+        .dice-face.face-3 .dot:nth-child(3) { grid-area: 3 / 3; }
+        
+        .dice-face.face-4 .dot:nth-child(1) { grid-area: 1 / 1; }
+        .dice-face.face-4 .dot:nth-child(2) { grid-area: 1 / 3; }
+        .dice-face.face-4 .dot:nth-child(3) { grid-area: 3 / 1; }
+        .dice-face.face-4 .dot:nth-child(4) { grid-area: 3 / 3; }
+        
+        .dice-face.face-5 .dot:nth-child(1) { grid-area: 1 / 1; }
+        .dice-face.face-5 .dot:nth-child(2) { grid-area: 1 / 3; }
+        .dice-face.face-5 .dot:nth-child(3) { grid-area: 2 / 2; }
+        .dice-face.face-5 .dot:nth-child(4) { grid-area: 3 / 1; }
+        .dice-face.face-5 .dot:nth-child(5) { grid-area: 3 / 3; }
+        
+        .dice-face.face-6 .dot:nth-child(1) { grid-area: 1 / 1; }
+        .dice-face.face-6 .dot:nth-child(2) { grid-area: 1 / 3; }
+        .dice-face.face-6 .dot:nth-child(3) { grid-area: 2 / 1; }
+        .dice-face.face-6 .dot:nth-child(4) { grid-area: 2 / 3; }
+        .dice-face.face-6 .dot:nth-child(5) { grid-area: 3 / 1; }
+        .dice-face.face-6 .dot:nth-child(6) { grid-area: 3 / 3; }
+        
+        .game-description {
+            max-width: 600px;
+            margin: 0 auto 30px;
+            text-align: center;
+            line-height: 1.6;
+        }
+        @keyframes roll {
+            0% { transform: rotateX(0) rotateY(0) rotateZ(0); }
+            100% { transform: rotateX(360deg) rotateY(360deg) rotateZ(360deg); }
+        }
+        .rolling {
+            animation: roll 1s infinite linear;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">Dice Roll Game</div>
+            <div class="user-info">
+                <div id="auth-section">
+                    <!-- This will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="glass-container">
+            <div class="welcome-container">
+                <h1>Welcome to Dice Roll Game!</h1>
+                <p class="game-description">
+                    Challenge another player to a game of chance! Each player rolls a dice, and the highest roll wins.
+                    Simple, fast, and exciting - may the odds be in your favor!
+                </p>
+            </div>
+            
+            <div class="dice-container">
+                <div class="dice" id="dice1"></div>
+                <div class="dice" id="dice2"></div>
+            </div>
+            
+            <div class="game-actions">
+                <button class="btn start-game-btn" id="start-game">Create Game Room</button>
+                <a href="/dice/rooms" class="btn join-game-btn">Join Game Room</a>
+                <a href="/" class="btn">Back to Main Menu</a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/js/background-animation.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is logged in
+            const username = sessionStorage.getItem('username');
+            const authSection = document.getElementById('auth-section');
+            
+            if (username) {
+                authSection.innerHTML = `
+                    <span>Welcome, ${username}!</span>
+                    <a class="logout-btn" onclick="logout()">Logout</a>
+                `;
+            } else {
+                authSection.innerHTML = `
+                    <div class="auth-buttons">
+                        <a href="/auth/login" class="login-btn">Login</a>
+                        <a href="/auth/register" class="register-btn">Register</a>
+                    </div>
+                `;
+            }
+            
+            // Add event listener for start game button
+            document.getElementById('start-game').addEventListener('click', function() {
+                if (username) {
+                    window.location.href = '/dice/rooms';
+                } else {
+                    alert('Please login to create a game room.');
+                    window.location.href = '/auth/login';
+                }
+            });
+            
+            // Initialize dice
+            const dice1 = document.getElementById('dice1');
+            const dice2 = document.getElementById('dice2');
+            
+            // Create dice faces
+            createDiceFace(dice1, 4);
+            createDiceFace(dice2, 6);
+            
+            // Animate dice on hover
+            dice1.addEventListener('mouseenter', function() {
+                rollDice(dice1);
+            });
+            
+            dice2.addEventListener('mouseenter', function() {
+                rollDice(dice2);
+            });
+            
+            // Periodically roll the dice
+            setInterval(() => {
+                rollDice(dice1);
+                
+                setTimeout(() => {
+                    rollDice(dice2);
+                }, 1500);
+            }, 5000);
+        });
+        
+        function createDiceFace(diceElement, value) {
+            // Clear existing content
+            diceElement.innerHTML = '';
+            
+            // Create face with dots
+            const face = document.createElement('div');
+            face.className = `dice-face face-${value}`;
+            
+            // Add dots based on value
+            for (let i = 0; i < value; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'dot';
+                face.appendChild(dot);
+            }
+            
+            diceElement.appendChild(face);
+        }
+        
+        function rollDice(diceElement) {
+            // Add rolling animation
+            diceElement.classList.add('rolling');
+            
+            // Roll for 1 second
+            setTimeout(() => {
+                // Remove rolling animation
+                diceElement.classList.remove('rolling');
+                
+                // Show random value
+                const value = Math.floor(Math.random() * 6) + 1;
+                createDiceFace(diceElement, value);
+            }, 1000);
+        }
+        
+        function logout() {
+            // Clear session storage
+            sessionStorage.removeItem('username');
+            
+            // Redirect to server-side logout to clear the session
+            window.location.href = '/logout';
+        }
+    </script>
+</body>
+</html> 

@@ -9,8 +9,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 
-import jakarta.servlet.http.HttpSession;
-
 @Controller
 public class WebController {
     
@@ -19,16 +17,6 @@ public class WebController {
     @Autowired
     public WebController(UserService userService) {
         this.userService = userService;
-    }
-
-    @GetMapping("/")
-    public String index() {
-        return "index";
-    }
-
-    @GetMapping("/index")
-    public String home() {
-        return "index";
     }
 
     @GetMapping("/auth/login")

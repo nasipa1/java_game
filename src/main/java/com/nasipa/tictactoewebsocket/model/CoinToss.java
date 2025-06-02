@@ -10,9 +10,9 @@ import java.util.UUID;
 public class CoinToss {
     private String id;
     private String initiator;
-    private String result; // "HEADS" or "TAILS"
+    private String result; 
     private boolean completed;
-    private Map<String, String> userGuesses; // username -> "HEADS" or "TAILS"
+    private Map<String, String> userGuesses;
     private List<String> winners;
     
     public CoinToss() {

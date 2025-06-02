@@ -1,17 +1,18 @@
 package com.nasipa.tictactoewebsocket.service;
 
-import com.nasipa.tictactoewebsocket.model.GameHistory;
-import com.nasipa.tictactoewebsocket.model.GameRoom;
-import com.nasipa.tictactoewebsocket.repository.GameHistoryRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.nasipa.tictactoewebsocket.model.GameHistory;
+import com.nasipa.tictactoewebsocket.model.GameRoom;
+import com.nasipa.tictactoewebsocket.repository.GameHistoryRepository;
 
 @Service
 public class GameHistoryService {
@@ -31,7 +32,6 @@ public class GameHistoryService {
         boolean isDraw = gameRoom.getWinner() != null && gameRoom.getWinner().equals("Draw");
         String winner = isDraw ? null : gameRoom.getWinner();
 
-        // Count the number of moves made in the game
         int movesCount = 0;
         String[][] board = gameRoom.getBoard();
         for (int i = 0; i < board.length; i++) {

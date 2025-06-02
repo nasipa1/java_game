@@ -1,15 +1,10 @@
 package com.nasipa.tictactoewebsocket.model;
 
-import com.nasipa.tictactoewebsocket.enumeration.GameState;
-
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Class representing a Tic-Tac-Toe game.
- *
- * @author Joabson Arley do Nascimento
- */
+import com.nasipa.tictactoewebsocket.enumeration.GameState;
+
 public class TicTacToe {
     private String gameId;
     private String[][] board;
@@ -33,12 +28,7 @@ public class TicTacToe {
         gameState = GameState.WAITING_FOR_PLAYER;
     }
 
-    /**
-     * Makes a move in the specified position on the board.
-     *
-     * @param player the name of the player making the move
-     * @param move   the position of the move
-     */
+    
     public void makeMove(String player, int move) {
         int row = move / 3;
         int col = move % 3;
@@ -50,10 +40,7 @@ public class TicTacToe {
         }
     }
 
-    /**
-     * Check if there is a winner. If a winning combination is found,
-     * the winner is set to the corresponding player.
-     */
+
     private void checkWinner() {
         for (int i = 0; i < 3; i++) {
             if (Objects.equals(board[i][0], board[i][1]) && Objects.equals(board[i][0], board[i][2])) {
@@ -81,9 +68,7 @@ public class TicTacToe {
         }
     }
 
-    /**
-     * Updates the game state based on the current state of the game.
-     */
+
     private void updateGameState() {
         if (winner != null) {
             gameState = winner.equals(player1) ? GameState.PLAYER1_WON : GameState.PLAYER2_WON;
@@ -94,11 +79,7 @@ public class TicTacToe {
         }
     }
 
-    /**
-     * Check if the board is full.
-     *
-     * @return true if the board is full, false otherwise
-     */
+
     private boolean isBoardFull() {
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
@@ -110,18 +91,10 @@ public class TicTacToe {
         return true;
     }
 
-    /**
-     * Check if the game is over.
-     *
-     * @return true if the game is over, false otherwise
-     */
+
     public boolean isGameOver() {
         return winner != null || isBoardFull();
     }
-
-    /**
-     * Getters and Setters
-     */
     public String getGameId() {
         return gameId;
     }

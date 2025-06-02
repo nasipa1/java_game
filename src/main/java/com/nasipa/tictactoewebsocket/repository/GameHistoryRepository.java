@@ -11,16 +11,12 @@ import java.util.List;
 @Repository
 public interface GameHistoryRepository extends JpaRepository<GameHistory, Long> {
     
-    // Find games by winner
     List<GameHistory> findByWinner(String winner);
-    
-    // Find games by player (either X or O)
+
     List<GameHistory> findByPlayerXOrPlayerO(String playerX, String playerO);
     
-    // Find games played between specific dates
     List<GameHistory> findByGameDateBetween(LocalDateTime startDate, LocalDateTime endDate);
     
-    // Find games with a specific number of moves or less
     List<GameHistory> findByMovesCountLessThanEqual(Integer movesCount);
     
     @Query(value = "SELECT winner, COUNT(*) as wins FROM game_history WHERE winner IS NOT NULL AND is_draw = false GROUP BY winner ORDER BY wins DESC LIMIT 10", nativeQuery = true)

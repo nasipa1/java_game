@@ -1,14 +1,15 @@
 package com.nasipa.tictactoewebsocket.controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Controller;
+
 import com.nasipa.tictactoewebsocket.model.GameRoom;
 import com.nasipa.tictactoewebsocket.model.dto.GameMoveDto;
 import com.nasipa.tictactoewebsocket.model.dto.GameRoomDto;
 import com.nasipa.tictactoewebsocket.service.GameHistoryService;
 import com.nasipa.tictactoewebsocket.service.GameRoomService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Controller;
 
 @Controller
 public class GameWebSocketController {
@@ -34,7 +35,6 @@ public class GameWebSocketController {
         );
         
         if (gameRoom != null) {
-            // Save game history if the game is finished
             if (gameRoom.isGameFinished()) {
                 gameHistoryService.saveGameHistory(gameRoom);
             }
